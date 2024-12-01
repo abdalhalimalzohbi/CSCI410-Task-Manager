@@ -9,6 +9,7 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+
 class _HomePageState extends State<HomePage> {
   final List<Task> tasks = [
     Task(
@@ -29,23 +30,6 @@ class _HomePageState extends State<HomePage> {
           'Implement login, registration, and password recovery features.',
       status: 'Ongoing',
     ),
-    Task(
-      title: 'Conduct Code Review',
-      description:
-          'Review the codebase for the new features implemented in Sprint 2.',
-      status: 'Completed',
-    ),
-    Task(
-      title: 'Set Up CI/CD Pipeline',
-      description: 'Configure Jenkins for automated testing and deployment.',
-      status: 'Ongoing',
-    ),
-    Task(
-      title: 'Prepare Sprint Retrospective',
-      description:
-          'Document the successes, challenges, and lessons learned during Sprint 2.',
-      status: 'Completed',
-    ),
   ];
 
   void updateTaskStatus(Task task, String newStatus) {
@@ -59,6 +43,59 @@ class _HomePageState extends State<HomePage> {
         );
       }
     });
+  }
+
+  void _showAddTaskDialog() {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Task'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Task Title'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: 'Task Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final String title = titleController.text.trim();
+                final String description = descriptionController.text.trim();
+
+                if (title.isNotEmpty && description.isNotEmpty) {
+                  setState(() {
+                    tasks.add(Task(
+                      title: title,
+                      description: description,
+                      status: 'Ongoing',
+                    ));
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -75,7 +112,10 @@ class _HomePageState extends State<HomePage> {
             'My Tasks',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
           ),
-          leading: IconButton(onPressed: (){}, icon: Icon(Icons.add)),
+          leading: IconButton(
+            onPressed: _showAddTaskDialog,
+            icon: const Icon(Icons.add),
+          ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(70),
             child: ClipRRect(
