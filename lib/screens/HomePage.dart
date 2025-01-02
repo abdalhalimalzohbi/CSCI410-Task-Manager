@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:my_tasks_manager/model/Task.dart';
 import 'package:my_tasks_manager/widget/TabItem.dart';
 import 'package:my_tasks_manager/widget/TasksListWidget.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,44 +13,59 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<Task> tasks = [
-    Task(
-      title: 'Prepare Project Proposal',
-      description:
-          'Draft and submit the initial proposal for the upcoming project to the client.',
-      status: 'Ongoing',
-    ),
-    Task(
-      title: 'Finalize UI/UX Design',
-      description:
-          'Incorporate feedback from the design review meeting and finalize the UI/UX.',
-      status: 'Completed',
-    ),
-    Task(
-      title: 'Develop Authentication Module',
-      description:
-          'Implement login, registration, and password recovery features.',
-      status: 'Ongoing',
-    ),
-  ];
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
 
-  void updateTaskStatus(Task task, String newStatus) {
-    setState(() {
-      final index = tasks.indexOf(task);
-      if (index != -1) {
-        tasks[index] = Task(
-          title: task.title,
-          description: task.description,
-          status: newStatus,
-        );
-      }
+  final List<Task> tasks = [];
+
+@override
+void initState() {
+  super.initState();
+  getTasks();
+}
+
+  void updateTaskStatus(Task task, String newStatus) async {
+    String serverPath = "http://192.168.10.1:80/CSCI410/my_tasks_manager/updateTaskStatus.php";
+    Uri url = Uri.parse(serverPath);
+    var response =
+        await http.put(url, body: {"id": task.id, "status": newStatus});
+  }
+
+  postTask() async {
+    String serverPath = "http://192.168.10.1:80/my_tasks_manager/CSCI410/addTask.php";
+    Uri url = Uri.parse(serverPath);
+    var response = await http.post(url, body: {
+      "title": titleController.text,
+      "description": descriptionController.text,
+      "status": "Ongoing"
     });
+    await getTasks();
+  }
+
+  getTasks() async {
+    String serverPath = "http://192.168.10.1:80/my_tasks_manager/CSCI410/getTasks.php";
+    Uri url = Uri.parse(serverPath);
+    try {
+      print("Getting tasks");
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        tasks.clear();
+        var data = convert.jsonDecode(response.body);
+        for (var task in data) {
+          tasks.add(Task(
+            id: task['id'],
+            title: task['title'],
+            description: task['description'],
+            status: task['status'],
+          ));
+        }
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 
   void _showAddTaskDialog() {
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -63,7 +80,8 @@ class _HomePageState extends State<HomePage> {
               ),
               TextField(
                 controller: descriptionController,
-                decoration: const InputDecoration(labelText: 'Task Description'),
+                decoration:
+                    const InputDecoration(labelText: 'Task Description'),
               ),
             ],
           ),
@@ -80,13 +98,7 @@ class _HomePageState extends State<HomePage> {
                 final String description = descriptionController.text.trim();
 
                 if (title.isNotEmpty && description.isNotEmpty) {
-                  setState(() {
-                    tasks.add(Task(
-                      title: title,
-                      description: description,
-                      status: 'Ongoing',
-                    ));
-                  });
+                  postTask();
                   Navigator.of(context).pop();
                 }
               },
@@ -130,7 +142,8 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.all(6),
                       margin: const EdgeInsets.symmetric(horizontal: 15),
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.all(Radius.circular(8)),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8)),
                         color: Colors.grey[100],
                       ),
                       child: const TabBar(
@@ -165,7 +178,8 @@ class _HomePageState extends State<HomePage> {
             ),
             Center(
               child: TasksListWidget(
-                tasks: tasks.where((task) => task.status == 'Completed').toList(),
+                tasks:
+                    tasks.where((task) => task.status == 'Completed').toList(),
                 onTaskStatusChanged: updateTaskStatus,
               ),
             ),
