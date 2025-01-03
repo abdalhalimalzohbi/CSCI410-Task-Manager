@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_tasks_manager/model/Task.dart';
+import 'package:my_tasks_manager/services/TaskService.dart';
 import 'package:my_tasks_manager/widget/TabItem.dart';
 import 'package:my_tasks_manager/widget/TasksListWidget.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert' as convert;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,70 +15,22 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  final List<Task> tasks = [];
+  List<Task> tasks = [];
 
   @override
   void initState() {
     super.initState();
-    getTasks();
+    _fetchTasks();
   }
 
-  void updateTaskStatus(Task task, String newStatus) async {
-    print("Task ID: ${task.id}, New Status: $newStatus");
-    String serverPath =
-        "http://10.0.2.2:80/my_tasks_manager/CSCI410/updateTaskStatus.php";
-    Uri url = Uri.parse(serverPath);
+  Future<void> _fetchTasks() async {
     try {
-      var response = await http.post(
-        url,
-        body: {"id": task.id.toString(), "status": newStatus},
-      );
-      await getTasks();
-    } catch (e) {
-      print("Error: $e");
-    }
-  }
-
-  postTask() async {
-    String serverPath =
-        "http://10.0.2.2:80/my_tasks_manager/CSCI410/addTask.php";
-    Uri url = Uri.parse(serverPath);
-    try {
-      var response = await http.post(url, body: {
-        "title": titleController.text,
-        "description": descriptionController.text,
-        "status": "Ongoing"
+      List<Task> response = await TaskService().getTasks();
+      setState(() {
+        tasks = response;
       });
-      await getTasks();
     } catch (e) {
-      print(e);
-    }
-  }
-
-  getTasks() async {
-    String serverPath =
-        "http://10.0.2.2:80/my_tasks_manager/CSCI410/getTasks.php";
-    Uri url = Uri.parse(serverPath);
-    try {
-      print("Getting tasks");
-      var response = await http.get(url);
-      if (response.statusCode == 200) {
-        tasks.clear();
-        var data = convert.jsonDecode(response.body);
-        setState(() {
-          tasks.clear();
-          for (var task in data) {
-            tasks.add(Task(
-              id: int.tryParse(task['id']),
-              title: task['title'],
-              description: task['description'],
-              status: task['status'],
-            ));
-          }
-        });
-      }
-    } catch (e) {
-      print(e);
+      print("Error fetching tasks: $e");
     }
   }
 
@@ -111,12 +62,13 @@ class _HomePageState extends State<HomePage> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final String title = titleController.text.trim();
                 final String description = descriptionController.text.trim();
 
                 if (title.isNotEmpty && description.isNotEmpty) {
-                  postTask();
+                  await TaskService().postTask(title, description);
+                  await _fetchTasks();
                   Navigator.of(context).pop();
                 }
               },
@@ -190,15 +142,29 @@ class _HomePageState extends State<HomePage> {
           children: [
             Center(
               child: TasksListWidget(
+                deleteTask: (task) async {
+                  await TaskService().deleteTask(task.id.toString());
+                  _fetchTasks();
+                },
                 tasks: tasks.where((task) => task.status == 'Ongoing').toList(),
-                onTaskStatusChanged: updateTaskStatus,
+                onTaskStatusChanged: (task, status) async {
+                  await TaskService().updateTaskStatus(task, status);
+                  _fetchTasks();
+                },
               ),
             ),
             Center(
               child: TasksListWidget(
                 tasks:
                     tasks.where((task) => task.status == 'Completed').toList(),
-                onTaskStatusChanged: updateTaskStatus,
+                onTaskStatusChanged: (task, status) async {
+                  await TaskService().updateTaskStatus(task, status);
+                  _fetchTasks();
+                },
+                deleteTask: (task) async {
+                  await TaskService().deleteTask(task.id.toString());
+                  _fetchTasks();
+                },
               ),
             ),
           ],

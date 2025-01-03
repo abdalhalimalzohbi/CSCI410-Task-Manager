@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:my_tasks_manager/model/Task.dart';
+import 'package:http/http.dart' as http;
+import 'package:my_tasks_manager/services/TaskService.dart';
 
 class TasksListWidget extends StatefulWidget {
   final List<Task> tasks;
   final Function(Task, String) onTaskStatusChanged;
-
+  final Function(Task) deleteTask;
   const TasksListWidget({
     super.key,
     required this.tasks,
     required this.onTaskStatusChanged,
+    required this.deleteTask,
   });
 
   @override
@@ -38,16 +41,28 @@ class _TasksListWidgetState extends State<TasksListWidget> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(task.description),
-            trailing: IconButton(
-              icon: Icon(
-                Icons.check_circle,
-                color: task.status == 'Ongoing' ? Colors.grey : Colors.green,
-              ),
-              onPressed: () {
-                final newStatus =
-                    task.status == 'Ongoing' ? 'Completed' : 'Ongoing';
-                widget.onTaskStatusChanged(task, newStatus);
-              },
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.check_circle,
+                    color:
+                        task.status == 'Ongoing' ? Colors.grey : Colors.green,
+                  ),
+                  onPressed: () {
+                    final newStatus =
+                        task.status == 'Ongoing' ? 'Completed' : 'Ongoing';
+                    widget.onTaskStatusChanged(task, newStatus);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    widget.deleteTask(task);
+                  },
+                ),
+              ],
             ),
           ),
         );
