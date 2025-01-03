@@ -1,5 +1,5 @@
 <?php
-include 'connection.php';
+    require_once('connection.php');
 
 $id = $_POST['id'];
 $status = $_POST['status'];

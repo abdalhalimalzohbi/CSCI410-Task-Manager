@@ -18,32 +18,47 @@ class _HomePageState extends State<HomePage> {
 
   final List<Task> tasks = [];
 
-@override
-void initState() {
-  super.initState();
-  getTasks();
-}
+  @override
+  void initState() {
+    super.initState();
+    getTasks();
+  }
 
   void updateTaskStatus(Task task, String newStatus) async {
-    String serverPath = "http://192.168.10.1:80/CSCI410/my_tasks_manager/updateTaskStatus.php";
+    print("Task ID: ${task.id}, New Status: $newStatus");
+    String serverPath =
+        "http://10.0.2.2:80/my_tasks_manager/CSCI410/updateTaskStatus.php";
     Uri url = Uri.parse(serverPath);
-    var response =
-        await http.put(url, body: {"id": task.id, "status": newStatus});
+    try {
+      var response = await http.post(
+        url,
+        body: {"id": task.id.toString(), "status": newStatus},
+      );
+      await getTasks();
+    } catch (e) {
+      print("Error: $e");
+    }
   }
 
   postTask() async {
-    String serverPath = "http://192.168.10.1:80/my_tasks_manager/CSCI410/addTask.php";
+    String serverPath =
+        "http://10.0.2.2:80/my_tasks_manager/CSCI410/addTask.php";
     Uri url = Uri.parse(serverPath);
-    var response = await http.post(url, body: {
-      "title": titleController.text,
-      "description": descriptionController.text,
-      "status": "Ongoing"
-    });
-    await getTasks();
+    try {
+      var response = await http.post(url, body: {
+        "title": titleController.text,
+        "description": descriptionController.text,
+        "status": "Ongoing"
+      });
+      await getTasks();
+    } catch (e) {
+      print(e);
+    }
   }
 
   getTasks() async {
-    String serverPath = "http://192.168.10.1:80/my_tasks_manager/CSCI410/getTasks.php";
+    String serverPath =
+        "http://10.0.2.2:80/my_tasks_manager/CSCI410/getTasks.php";
     Uri url = Uri.parse(serverPath);
     try {
       print("Getting tasks");
@@ -51,14 +66,17 @@ void initState() {
       if (response.statusCode == 200) {
         tasks.clear();
         var data = convert.jsonDecode(response.body);
-        for (var task in data) {
-          tasks.add(Task(
-            id: task['id'],
-            title: task['title'],
-            description: task['description'],
-            status: task['status'],
-          ));
-        }
+        setState(() {
+          tasks.clear();
+          for (var task in data) {
+            tasks.add(Task(
+              id: int.tryParse(task['id']),
+              title: task['title'],
+              description: task['description'],
+              status: task['status'],
+            ));
+          }
+        });
       }
     } catch (e) {
       print(e);
