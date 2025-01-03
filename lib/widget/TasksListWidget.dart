@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:my_tasks_manager/model/Task.dart';
-import 'package:http/http.dart' as http;
-import 'package:my_tasks_manager/services/TaskService.dart';
 
 class TasksListWidget extends StatefulWidget {
   final List<Task> tasks;
