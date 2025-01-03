@@ -13,7 +13,7 @@ class TaskService {
         url,
         body: {"id": task.id.toString(), "status": newStatus},
       );
-      await getTasks();
+      await getTasks('');
     } catch (e) {
       print("Error: $e");
     }
@@ -26,18 +26,18 @@ class TaskService {
     try {
       var response = await http.post(url,
           body: {"title": title, "description": desc, "status": "Ongoing"});
-      await getTasks();
+      await getTasks('');
     } catch (e) {
       print(e);
     }
   }
 
-  getTasks() async {
+  getTasks(String searchQuery) async {
     String serverPath =
-        "http://10.0.2.2:80/my_tasks_manager/CSCI410/getTasks.php";
+        "http://10.0.2.2:80/my_tasks_manager/CSCI410/getTasks.php?searchQuery=$searchQuery";
     Uri url = Uri.parse(serverPath);
     try {
-      print("Getting tasks");
+      print("Getting tasks with search query: $searchQuery");
       var response = await http.get(url);
       if (response.statusCode == 200) {
         List<Task> tasks = [];

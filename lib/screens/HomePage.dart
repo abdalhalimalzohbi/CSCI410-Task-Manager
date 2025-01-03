@@ -14,8 +14,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
   List<Task> tasks = [];
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -23,9 +25,9 @@ class _HomePageState extends State<HomePage> {
     _fetchTasks();
   }
 
-  Future<void> _fetchTasks() async {
+  Future<void> _fetchTasks({String searchQuery = ''}) async {
     try {
-      List<Task> response = await TaskService().getTasks();
+      List<Task> response = await TaskService().getTasks(searchQuery);
       setState(() {
         tasks = response;
       });
@@ -99,15 +101,52 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.add),
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(70),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(10)),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Container(
+            preferredSize: const Size.fromHeight(120),
+            child: Column(
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search tasks...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: isSearching
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                setState(() {
+                                  isSearching = false;
+                                });
+                                _fetchTasks();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (value.isNotEmpty) {
+                        setState(() {
+                          isSearching = true;
+                        });
+                        _fetchTasks(searchQuery: value);
+                      } else {
+                        setState(() {
+                          isSearching = false;
+                        });
+                        _fetchTasks();
+                      }
+                    },
+                  ),
+                ),
+                if (!isSearching)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                    child: Container(
                       height: 50,
                       padding: const EdgeInsets.all(6),
                       margin: const EdgeInsets.symmetric(horizontal: 15),
@@ -131,10 +170,8 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
           ),
         ),
